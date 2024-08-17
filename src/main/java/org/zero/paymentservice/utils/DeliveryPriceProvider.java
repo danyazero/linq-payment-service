@@ -5,7 +5,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.zero.paymentservice.exception.RequestException;
 import org.zero.paymentservice.model.DeliveryPrice;
-import org.zero.paymentservice.model.kafka.data.Order;
+import org.zero.paymentservice.model.Order;
 
 public class DeliveryPriceProvider {
 
@@ -31,9 +31,4 @@ public class DeliveryPriceProvider {
         if (response.getStatusCode() != HttpStatusCode.valueOf(200)) throw new RequestException("Error delivery price calculate");
         return response.getBody();
     }
-
-    //            @RequestParam String sender,
-    //            @RequestParam String recipient,
-    //            @RequestParam Double price,
-    //            @RequestParam Double weight
 }

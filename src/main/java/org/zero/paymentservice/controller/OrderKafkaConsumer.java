@@ -14,22 +14,22 @@ import org.zero.paymentservice.utils.DeliveryPriceProvider;
 public class OrderKafkaConsumer {
     private final PaymentService paymentService;
 
-    @KafkaListener(topics = "orders", groupId = "payment-service", containerFactory = "orderListenerContainerFactory")
-    public void listen(OrderEvent event) {
-        System.out.println(event.toString());
-
-        Double deliveryPrice = DeliveryPriceProvider.provide(event.getEventData());
-        System.out.println("Delivery price: "+deliveryPrice);
-        var checkout = new Checkout(
-                event.getEventData().getOrderId(),
-                event.getEventData().getSellerUserId(),
-                event.getEventData().getRecipientUserId(),
-                event.getEventData().getCartPrice() + deliveryPrice
-        );
-
-
-        paymentService.createPaymentTransaction(checkout);
-    }
+//    @KafkaListener(topics = "orders", groupId = "payment-service", containerFactory = "orderListenerContainerFactory")
+//    public void listen(OrderEvent event) {
+//        System.out.println(event.toString());
+//
+//        Double deliveryPrice = DeliveryPriceProvider.provide(event.getEventData());
+//        System.out.println("Delivery price: "+deliveryPrice);
+//        var checkout = new Checkout(
+//                event.getEventData().getOrderId(),
+//                event.getEventData().getSellerUserId(),
+//                event.getEventData().getRecipientUserId(),
+//                event.getEventData().getCartPrice() + deliveryPrice
+//        );
+//
+//
+//        paymentService.createPaymentTransaction(checkout);
+//    }
 
 
 

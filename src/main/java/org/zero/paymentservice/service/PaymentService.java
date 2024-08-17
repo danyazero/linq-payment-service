@@ -15,12 +15,6 @@ import org.zero.paymentservice.model.liqPay.LiqPaySignature;
 import org.zero.paymentservice.model.liqPay.LiqPayStatus;
 import org.zero.paymentservice.repository.HistoryRepository;
 import org.zero.paymentservice.repository.TransactionRepository;
-import org.zero.paymentservice.utils.SignatureVerification;
-
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 
 @Service
 @RequiredArgsConstructor
@@ -30,7 +24,7 @@ public class PaymentService {
     private final LiqPayService liqPayService;
 
     @Transactional
-    public void createPaymentTransaction(Checkout checkout) {
+    public Transaction createPaymentTransaction(Checkout checkout) {
 
         var transaction = new Transaction();
         transaction.setAmount(checkout.amount());
@@ -42,17 +36,23 @@ public class PaymentService {
         var currentStatus = new History();
         currentStatus.setStatus("DEFINED");
         currentStatus.setTransaction(createdTransaction);
-        currentStatus = historyRepository.save(currentStatus);
+        historyRepository.save(currentStatus);
+
+        return transaction;
+    }
+
+    public LiqPaySignature getPaymentCheckout(Transaction transaction) {
+        LiqPayCheckout liqPayCheckout = new LiqPayCheckout(transaction.getAmount().toString(), "UAH", "Замовлення на сервісі linq", transaction.getOrderId());
+        var responseBody = liqPayService.getPaymentCheckout(liqPayCheckout);
+        if (responseBody == null) throw new RequestException("Error creating checkout");
+        return responseBody;
     }
 
     public LiqPaySignature getPaymentCheckout(String orderId) {
         var transaction = transactionRepository.findByOrderId(orderId);
         if (transaction.isEmpty()) throw new RequestException("Payment transaction not found");
 
-        LiqPayCheckout liqPayCheckout = new LiqPayCheckout(transaction.get().getAmount().toString(), "UAH", "Замовлення на сервісі linq", orderId);
-        var responseBody = liqPayService.getPaymentCheckout(liqPayCheckout);
-        if (responseBody == null) throw new RequestException("Error creating checkout");
-        return responseBody;
+        return this.getPaymentCheckout(transaction.get());
     }
 
     public void completePayment(Pay pay) {
