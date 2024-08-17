@@ -14,6 +14,7 @@ import org.zero.paymentservice.model.Checkout;
 import org.zero.paymentservice.model.OrderStatus;
 import org.zero.paymentservice.model.Pay;
 import org.zero.paymentservice.model.liqPay.*;
+import org.zero.paymentservice.proxy.PaymentKafkaProducer;
 import org.zero.paymentservice.repository.HistoryRepository;
 import org.zero.paymentservice.repository.TransactionRepository;
 import org.zero.paymentservice.utils.IdempotencyProvider;
@@ -26,6 +27,7 @@ import java.util.Optional;
 public class PaymentService {
     private final Logger logger = LoggerFactory.getLogger(PaymentService.class);
     private final TransactionRepository transactionRepository;
+    private final PaymentKafkaProducer paymentKafkaProducer;
     private final HistoryRepository historyRepository;
     private final LiqPayService liqPayService;
 
@@ -70,6 +72,7 @@ public class PaymentService {
         var transaction = transactionRepository.findFirstByOrderId(result.data().getOrder_id());
         if (transaction.isEmpty()) throw new RequestException("LiqPay transaction not found");
         saveTransactionStatusRow(result, transaction);
+        paymentKafkaProducer.sendPaymentHoldEvent(transaction.get().getOrderId(), Double.valueOf(result.data().getAmount()));
     }
 
 

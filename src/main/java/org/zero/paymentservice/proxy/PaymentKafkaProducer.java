@@ -12,8 +12,8 @@ import org.zero.paymentservice.model.kafka.data.Payment;
 public class PaymentKafkaProducer {
     private final KafkaTemplate<String, PaymentEvent> kafkaTemplate;
 
-    public void sendPaymentHoldEvent(String orderId) {
-        var event = new PaymentEvent("PaymentHold", 1, new Payment(orderId));
+    public void sendPaymentHoldEvent(String orderId, Double amount) {
+        var event = new PaymentEvent("PaymentHold", 1, new Payment(orderId, amount));
         System.out.println("called");
         kafkaTemplate.send("payments", event);
     }
