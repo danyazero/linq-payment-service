@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.zero.paymentservice.mapper.CheckoutMapper;
 import org.zero.paymentservice.model.Checkout;
 import org.zero.paymentservice.model.Order;
 import org.zero.paymentservice.model.Pay;
@@ -24,19 +25,10 @@ public class CheckoutController {
     @PutMapping
     public LiqPaySignature createPaymentAndGetCheckout(@RequestBody Order order) {
         var deliveryPrice = DeliveryPriceProvider.provide(order);
-        var checkout = new Checkout(
-                order.getOrderId(),
-                order.getSellerUserId(),
-                order.getRecipientUserId(),
-                order.getCartPrice() + deliveryPrice
-        );
+        var checkout = CheckoutMapper.map(order, deliveryPrice);
         var createdTransaction = paymentService.createPaymentTransaction(checkout);
-        return paymentService.getPaymentCheckout(createdTransaction);
-    }
 
-    @GetMapping
-    public LiqPaySignature getCheckout(@RequestParam String orderId) {
-        return paymentService.getPaymentCheckout(orderId);
+        return paymentService.getPaymentCheckout(createdTransaction);
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)

@@ -6,15 +6,16 @@ import org.springframework.transaction.annotation.Transactional;
 import org.zero.paymentservice.entity.History;
 import org.zero.paymentservice.entity.Transaction;
 import org.zero.paymentservice.exception.RequestException;
+import org.zero.paymentservice.mapper.CheckoutMapper;
+import org.zero.paymentservice.mapper.PaymentMapper;
 import org.zero.paymentservice.model.Checkout;
+import org.zero.paymentservice.model.OrderStatus;
 import org.zero.paymentservice.model.Pay;
-import org.zero.paymentservice.model.TransactionInfo;
-import org.zero.paymentservice.model.liqPay.LiqPayCheckout;
-import org.zero.paymentservice.model.liqPay.LiqPayComplete;
-import org.zero.paymentservice.model.liqPay.LiqPaySignature;
-import org.zero.paymentservice.model.liqPay.LiqPayStatus;
+import org.zero.paymentservice.model.liqPay.*;
 import org.zero.paymentservice.repository.HistoryRepository;
 import org.zero.paymentservice.repository.TransactionRepository;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -25,27 +26,10 @@ public class PaymentService {
 
     @Transactional
     public Transaction createPaymentTransaction(Checkout checkout) {
+        var createdTransaction = createTransaction(checkout);
+        saveTransactionStatusRow(createdTransaction);
 
-        var transaction = new Transaction();
-        transaction.setAmount(checkout.amount());
-        transaction.setOrderId(checkout.orderId());
-        transaction.setRecipientId(checkout.recipientId());
-        transaction.setPayerId(checkout.payerId());
-        var createdTransaction = transactionRepository.save(transaction);
-
-        var currentStatus = new History();
-        currentStatus.setStatus("DEFINED");
-        currentStatus.setTransaction(createdTransaction);
-        historyRepository.save(currentStatus);
-
-        return transaction;
-    }
-
-    public LiqPaySignature getPaymentCheckout(Transaction transaction) {
-        LiqPayCheckout liqPayCheckout = new LiqPayCheckout(transaction.getAmount().toString(), "UAH", "Замовлення на сервісі linq", transaction.getOrderId());
-        var responseBody = liqPayService.getPaymentCheckout(liqPayCheckout);
-        if (responseBody == null) throw new RequestException("Error creating checkout");
-        return responseBody;
+        return createdTransaction;
     }
 
     public LiqPaySignature getPaymentCheckout(String orderId) {
@@ -55,12 +39,22 @@ public class PaymentService {
         return this.getPaymentCheckout(transaction.get());
     }
 
+    public LiqPaySignature getPaymentCheckout(Transaction transaction) {
+        LiqPayCheckout liqPayCheckout = CheckoutMapper.map(transaction);
+        var responseBody = liqPayService.getPaymentCheckout(liqPayCheckout);
+        if (responseBody == null) throw new RequestException("Error creating checkout");
+        return responseBody;
+    }
+
     public void completePayment(Pay pay) {
         var transaction = transactionRepository.findByOrderId(pay.getOrderId());
         if (transaction.isEmpty()) throw new RequestException("Payment transaction not found");
+
         var currentStatus = historyRepository.getPaymentStatus(transaction.get().getId());
-        if (currentStatus.isPresent() && currentStatus.get().getStatus().equals("SUCCESS")) throw new RequestException("Payment already completed");
-        var paymentResult = liqPayService.completePayment(new LiqPayComplete(String.valueOf(pay.getAmount()), pay.getOrderId()));
+        if (isPresentAndSuccess(currentStatus)) throw new RequestException("Payment already completed");
+
+        var body = PaymentMapper.map(pay);
+        liqPayService.completePayment(body);
     }
 
     public void updatePaymentStatus(LiqPaySignature data) {
@@ -69,9 +63,38 @@ public class PaymentService {
 
         var transaction = transactionRepository.findByOrderId(result.data().getOrder_id());
         if (transaction.isEmpty()) throw new RequestException("LiqPay transaction not found");
-        var newStatus = new History();
-        newStatus.setStatus(LiqPayStatus.getStatusByCode(result.data().getStatus()));
-        newStatus.setTransaction(transaction.get());
-        newStatus = historyRepository.save(newStatus);
+        saveTransactionStatusRow(result, transaction);
+    }
+
+
+
+
+    private void saveTransactionStatusRow(LiqPayVerify result, Optional<Transaction> transaction) {
+        var status = LiqPayStatus.getStatusByCode(result.data().getStatus());
+        transaction.ifPresent(value -> this.saveTransactionStatusRow(status, value));
+    }
+
+    private static boolean isPresentAndSuccess(Optional<OrderStatus> currentStatus) {
+        return currentStatus.isPresent() && currentStatus.get().getStatus().equals("SUCCESS");
+    }
+
+    private void saveTransactionStatusRow(Transaction createdTransaction) {
+        this.saveTransactionStatusRow("DEFINED", createdTransaction);
+    }
+
+    private void saveTransactionStatusRow(String status, Transaction transaction) {
+        var currentStatus = new History();
+        currentStatus.setStatus(status);
+        currentStatus.setTransaction(transaction);
+        historyRepository.save(currentStatus);
+    }
+
+    private Transaction createTransaction(Checkout checkout) {
+        var transaction = new Transaction();
+        transaction.setAmount(checkout.amount());
+        transaction.setOrderId(checkout.orderId());
+        transaction.setRecipientId(checkout.recipientId());
+        transaction.setPayerId(checkout.payerId());
+        return transactionRepository.save(transaction);
     }
 }
