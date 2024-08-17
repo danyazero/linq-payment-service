@@ -2,10 +2,16 @@ package org.zero.paymentservice.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 import org.zero.paymentservice.exception.RequestException;
+import org.zero.paymentservice.model.DeliveryPrice;
 import org.zero.paymentservice.model.liqPay.*;
 import org.zero.paymentservice.repository.HistoryRepository;
 import org.zero.paymentservice.repository.TransactionRepository;
@@ -17,11 +23,12 @@ import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
 public class LiqPayService {
-    private final HttpClient client = HttpClient.newBuilder().build();
+    Logger logger = LoggerFactory.getLogger(LiqPayService.class);
 
     @Value("${liqpay.server.url}")
     private String serverLink;
@@ -49,19 +56,32 @@ public class LiqPayService {
         var result = this.getCompletePaymentRequestBody(object);
         var uri = URI.create(serverLink);
         var requestBody = URIEncoder.apply(result);
-        HttpRequest requestTemplate = HttpRequest.newBuilder()
-                .uri(uri)
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
-                .build();
-        HttpResponse<String> response = null;
-        try {
-            response = client.send(requestTemplate, HttpResponse.BodyHandlers.ofString());
-        } catch (IOException | InterruptedException e) {
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        HttpEntity<Map<String, String>> entity = new HttpEntity<>(requestBody, headers);
+        var response = new RestTemplate().exchange(uri, HttpMethod.POST, entity, LiqPayCallback.class);
+
+        if (response.getStatusCode() != HttpStatusCode.valueOf(200))
             throw new RequestException("Error sending complete payment request");
-        }
-        return Deserializer.apply(response.body(), LiqPayCallback.class);
+
+        return response.getBody();
     }
+
+    public LiqPayVerify verifyCallback(LiqPaySignature signature) {
+        String data = tryDecodeBase64(signature);
+        logger.info(data);
+        LiqPayCallback serialized = Deserializer.apply(data, LiqPayCallback.class);
+        var check = getLiqPaySignature(signature.data());
+        return new LiqPayVerify(
+                serialized,
+                check.signature().equals(signature.signature())
+        );
+    }
+
+
+
 
     private LiqPaySignature getCompletePaymentRequestBody(LiqPayComplete object) {
         fillHeader(object, LiqPayAction.hold_completion);
@@ -73,19 +93,6 @@ public class LiqPayService {
         object.setAction(action);
         object.setVersion(Integer.parseInt(apiVersion));
         object.setPublic_key(publicKey);
-    }
-
-    public LiqPayVerify verifyCallback(LiqPaySignature signature) {
-        String data = null;
-        data = tryDecodeBase64(signature);
-        System.out.println(data);
-        LiqPayCallback serialized = Deserializer.apply(data, LiqPayCallback.class);
-        var check = getLiqPaySignature(signature.data());
-        System.out.println(check);
-        return new LiqPayVerify(
-                serialized,
-                check.signature().equals(signature.signature())
-        );
     }
 
     private static String tryDecodeBase64(LiqPaySignature signature) {

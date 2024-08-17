@@ -1,6 +1,8 @@
 package org.zero.paymentservice.service;
 
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.zero.paymentservice.entity.History;
@@ -20,6 +22,7 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
+    private Logger logger = LoggerFactory.getLogger(PaymentService.class);
     private final TransactionRepository transactionRepository;
     private final HistoryRepository historyRepository;
     private final LiqPayService liqPayService;
@@ -54,7 +57,7 @@ public class PaymentService {
         if (isPresentAndSuccess(currentStatus)) throw new RequestException("Payment already completed");
 
         var body = PaymentMapper.map(pay);
-        liqPayService.completePayment(body);
+        logger.info(liqPayService.completePayment(body).toString());
     }
 
     public void updatePaymentStatus(LiqPaySignature data) {

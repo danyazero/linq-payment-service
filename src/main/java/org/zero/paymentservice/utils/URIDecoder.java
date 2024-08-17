@@ -15,29 +15,6 @@ import java.util.function.BiFunction;
 @Component
 public class URIDecoder {
 
-//    @SneakyThrows
-//    public<T> T apply(String value, Class<T> objectClass) {
-//        var s = value.split("&");
-//        var constructor = objectClass.getDeclaredConstructor();
-//        constructor.setAccessible(true);
-//        var object = constructor.newInstance();
-//        for (String sd : s) {
-//            var parsed = sd.split("=");
-//            if (parsed.length != 2) continue;
-//            Field field = null;
-//            try {
-//                field = objectClass.getDeclaredField(parsed[0]);
-//            } catch (NoSuchFieldException | SecurityException e) {
-//                continue;
-//            }
-//
-//            field.setAccessible(true);
-//            field.set(object, parsed[1]);
-//        }
-//        return object;
-//    }
-
-
     @SneakyThrows
     public static <T> T apply(String value, Class<T> objectClass) {
         var s = value.split("&");

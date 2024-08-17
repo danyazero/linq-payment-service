@@ -24,22 +24,22 @@ import org.zero.paymentservice.utils.KafkaPropsProvider;
 import java.util.HashMap;
 import java.util.Map;
 
-@Configuration
+//@Configuration
 @RequiredArgsConstructor
 public class KafkaConfig {
 
-    @Bean
+//    @Bean
     public ProducerFactory<String, PaymentEvent> paymentProducerFactory(KafkaProperties kafkaProperties) {
 
         return  KafkaPropsProvider.producer(PaymentEvent.class, Payment.class);
     }
 
-    @Bean
+//    @Bean
     public KafkaTemplate<String, PaymentEvent> paymentKafkaTemplate(ProducerFactory<String, PaymentEvent> producerFactory) {
         return new KafkaTemplate<>(producerFactory);
     }
 
-    @Bean
+//    @Bean
     public NewTopic paymentTopic() {
         return new NewTopic("payments", 1, (short) 1);
     }
@@ -48,7 +48,7 @@ public class KafkaConfig {
         return KafkaPropsProvider.consumer(OrderEvent.class, Event.class);
     }
 
-    @Bean("orderListenerContainerFactory")
+//    @Bean("orderListenerContainerFactory")
     public KafkaListenerContainerFactory<?> orderListenerContainerFactory() {
         var factory = new ConcurrentKafkaListenerContainerFactory<String, OrderEvent>();
         factory.setConsumerFactory(orderConsumerFactory());

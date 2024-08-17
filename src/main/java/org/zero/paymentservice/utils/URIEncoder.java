@@ -2,18 +2,22 @@ package org.zero.paymentservice.utils;
 
 import lombok.SneakyThrows;
 import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.zero.paymentservice.model.URLParameter;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.function.Function;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class URIEncoder {
+
     @SneakyThrows
-    public static <T> String apply(T o) {
+    public static <T> Map<String, String> apply(T o) {
         var s = o.getClass().getDeclaredFields();
-        var list = new ArrayList<String>();
+//        var list = new ArrayList<String>();
+        Map<String, String> map= new HashMap<>();
         for (Field field : s) {
             field.setAccessible(true);
             var fieldAnnotation = field.getAnnotation(URLParameter.class);
@@ -24,12 +28,12 @@ public class URIEncoder {
             }
 
             var value = field.get(o);
-            System.out.println(value);
+
             if (value == null) continue;
 
             var encodedField = fieldName + "=" + value;
-            list.add(encodedField);
+            map.put(fieldName, value.toString());
         }
-        return String.join("&", list);
+        return map;
     }
 }

@@ -40,7 +40,7 @@ public class CheckoutController {
     @PatchMapping
     @SneakyThrows
     public void completePayment(@RequestBody Pay pay, HttpServletRequest request) {
-        paymentService.completePayment(new Pay(pay.getOrderId(), pay.getAmount()));
+        paymentService.completePayment(pay);
     }
 
 }

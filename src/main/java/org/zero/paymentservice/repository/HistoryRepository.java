@@ -11,7 +11,7 @@ public interface HistoryRepository extends JpaRepository<History, Integer> {
 
     @Query(value = """
 select H.status
-from "history" H where H.transaction = 1
+from "history" H where H.transaction_id = ?1
 order by H.id DESC limit 1
 """, nativeQuery = true)
     Optional<OrderStatus> getPaymentStatus(Integer paymentId);
