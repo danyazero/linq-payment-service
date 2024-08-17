@@ -16,19 +16,22 @@ import org.zero.paymentservice.model.Pay;
 import org.zero.paymentservice.model.liqPay.*;
 import org.zero.paymentservice.repository.HistoryRepository;
 import org.zero.paymentservice.repository.TransactionRepository;
+import org.zero.paymentservice.utils.IdempotencyProvider;
+import org.zero.paymentservice.utils.IdempotencyValueProvider;
 
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
-    private Logger logger = LoggerFactory.getLogger(PaymentService.class);
+    private final Logger logger = LoggerFactory.getLogger(PaymentService.class);
     private final TransactionRepository transactionRepository;
     private final HistoryRepository historyRepository;
     private final LiqPayService liqPayService;
 
     @Transactional
     public Transaction createPaymentTransaction(Checkout checkout) {
+
         var createdTransaction = createTransaction(checkout);
         saveTransactionStatusRow(createdTransaction);
 
@@ -36,7 +39,7 @@ public class PaymentService {
     }
 
     public LiqPaySignature getPaymentCheckout(String orderId) {
-        var transaction = transactionRepository.findByOrderId(orderId);
+        var transaction = transactionRepository.findFirstByOrderId(orderId);
         if (transaction.isEmpty()) throw new RequestException("Payment transaction not found");
 
         return this.getPaymentCheckout(transaction.get());
@@ -50,7 +53,7 @@ public class PaymentService {
     }
 
     public void completePayment(Pay pay) {
-        var transaction = transactionRepository.findByOrderId(pay.getOrderId());
+        var transaction = transactionRepository.findFirstByOrderId(pay.getOrderId());
         if (transaction.isEmpty()) throw new RequestException("Payment transaction not found");
 
         var currentStatus = historyRepository.getPaymentStatus(transaction.get().getId());
@@ -64,7 +67,7 @@ public class PaymentService {
         var result = liqPayService.verifyCallback(data);
         if (!result.verifyResult()) throw new RequestException("LiqPay verify failed");
 
-        var transaction = transactionRepository.findByOrderId(result.data().getOrder_id());
+        var transaction = transactionRepository.findFirstByOrderId(result.data().getOrder_id());
         if (transaction.isEmpty()) throw new RequestException("LiqPay transaction not found");
         saveTransactionStatusRow(result, transaction);
     }
