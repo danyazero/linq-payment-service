@@ -12,22 +12,19 @@
 
 ### Description
 
-This microservice, which is part of the Linq project, is responsible for managing user payments. Its main task is to process and integrate payments using the LiqPay service from PrivatBank.
+This microservice is part of the Linq project – and it's responsible for managing user payments. The main task is to process and integrate payments using the LiqPay service from PrivatBank.
 
-#### The main functions of the microservice are:
-#### 1. Requesting the shipping cost:
- - Receives order data, including amount, shipping and delivery address.
- - Performs a request to the delivery service to calculate the cost.
- - Adds the shipping cost to the order amount.
+1. The shipping cost is requested when the order is placed.
+ - Requests delivery cost from delivery service.
+ - Adds shipping cost to order total.
 #### 2. Checkout Formation:
- - Based on the order data and shipping calculation, forms Checkout according to “LiqPay” service documentation.
+- Checkout is formed based on the order data and shipping calculation.
 #### 3. Payment notification:
- - After successful payment, the “LiqPay” service notifies the microservice.
- - The microservice publishes an Event to the Kafka topic, signaling the successful payment.
+- After payment, the LiqPay service notifies the microservice.
+ The microservice sends a notification to Kafka when a payment is successful.
 #### 4. Processing the delivery status:
- - Listens to the Kafka topic that receives messages from another “Deliveries” microservice.
- - As soon as it receives information that the recipient has picked up the order from the post office or refused it, the microservice performs the necessary payment or refund actions.
-
+- Listens to Kafka for messages from another "Deliveries" microservice.
+- As soon as it receives information about the order status, the microservice performs the necessary payment or refund actions.
 ### Contact me:
 
 <a href="https://www.linkedin.com/in/danyazero/"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="Me in linkedIn"/></a>
