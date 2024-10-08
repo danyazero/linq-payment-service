@@ -11,10 +11,11 @@ import lombok.Setter;
 @NoArgsConstructor(force = true)
 @RequiredArgsConstructor
 public class LiqPayCheckout extends LiqPayHeader {
-        private final String amount;
-        private final String currency;
-        private final String description;
-        private final String order_id;
-        @JsonProperty("server_url")
-        private String serverURI = "http://wp8890.ddns.mksat.net/checkout";
+  private final String amount;
+  private final String currency;
+  private final String description;
+  private final String order_id;
+
+  @JsonProperty("server_url")
+  private String serverURI;
 }

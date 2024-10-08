@@ -23,12 +23,12 @@ public class DeliveryPriceProvider {
 
         HttpEntity<DeliveryPrice> entity = new HttpEntity<>(headers);
 
-
         var response = restTemplate.exchange(builder.toUriString(),
                 HttpMethod.GET,
                 entity, Double.class);
 
-        if (response.getStatusCode() != HttpStatusCode.valueOf(200)) throw new RequestException("Error delivery price calculate");
+        if (response.getStatusCode() != HttpStatusCode.valueOf(200))
+            throw new RequestException("Error delivery price calculate");
         return response.getBody();
     }
 }
